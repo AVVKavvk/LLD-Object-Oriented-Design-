@@ -1,4 +1,4 @@
-# LLD
+# LLD (Object Oriented Design)
 
 ### Design Principle 
 - DRY
