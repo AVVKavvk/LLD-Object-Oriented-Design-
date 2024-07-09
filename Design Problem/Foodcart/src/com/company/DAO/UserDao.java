@@ -2,6 +2,7 @@ package com.company.DAO;
 
 import com.company.Utils.IdGenretor;
 import com.company.constant.Gender;
+import com.company.model.Order;
 import com.company.model.Restaurant;
 import com.company.model.Review;
 import com.company.model.User;
@@ -14,7 +15,7 @@ public class UserDao {
     private UserDao(){
 
     };
-    public UserDao getInstance(){
+    public static UserDao getInstance(){
         if(userdao==null) {
             userdao=new UserDao();
         }
@@ -126,7 +127,7 @@ public class UserDao {
     public List<Restaurant> showRestaurents(String sortBy){
         List<Restaurant> allUserRestaurents=loggedInUser.getRestaurants();
         List<Restaurant> allRestaurentRelatedToPincode=new ArrayList<>();
-
+//        System.out.println(loggedInUser.getPincode()+"  " +loggedInUser.getName());
         for(Restaurant res:allUserRestaurents){
             if(res.getServicablePincodes().contains(loggedInUser.getPincode()) && res.getQuantity()>0){
                 allRestaurentRelatedToPincode.add(res);
@@ -135,18 +136,18 @@ public class UserDao {
         if(sortBy.equalsIgnoreCase("rating")){
             Collections.sort(allRestaurentRelatedToPincode,new SortByRating());
 
-            for(Restaurant res:allUserRestaurents){
-                System.out.println("Restaurent Id" + res.getId()+ " Restaurent Name "+res.getName()+"Itme "
-                        +res.getItem() + " Price "+res.getPrice() +"Rating "+res.getRating()
+            for(Restaurant res:allRestaurentRelatedToPincode){
+                System.out.println("Restaurent Id" + res.getId()+ " Restaurent Name "+res.getName()+" Itme "
+                        +res.getItem() + " Price "+res.getPrice() +" Rating "+res.getRating() + " Comment "
                 );
             }
             return allUserRestaurents;
         }
         else if(sortBy.equalsIgnoreCase("price")){
             Collections.sort(allRestaurentRelatedToPincode,new soryByPrice());
-            for(Restaurant res:allUserRestaurents){
-                System.out.println("Restaurent Id" + res.getId()+ " Restaurent Name "+res.getName()+"Itme "
-                        +res.getItem() + " Price "+res.getPrice() +"Rating "+res.getRating()
+            for(Restaurant res:allRestaurentRelatedToPincode){
+                System.out.println(" Restaurent Id " + res.getId()+ " Restaurent Name "+res.getName()+" Itme "
+                        +res.getItem() + " Price "+res.getPrice() +" Rating "+res.getRating()
                 );
             }
             return allUserRestaurents;
@@ -154,8 +155,48 @@ public class UserDao {
         System.out.println("Not a vaild sorting criteria");
         return null;
     }
-}
 
+    public Order placeOrder(String restaurentName,int Qunatity){
+        Restaurant restaurant=nameToRestaurantMap.get(restaurentName);
+        if(restaurant==null){
+            System.out.println("No restaurent found by this name");
+            return null;
+
+        }
+//        System.out.println(Qunatity+"  "+ restaurant.getQuantity());
+        if(restaurant.getQuantity()==0 || restaurant.getQuantity()<Qunatity){
+            System.out.println("Only " +restaurant.getQuantity()+ " Items are available ");
+            return null;
+        }
+        if(Qunatity==0){
+            System.out.println("Add Some Item");
+            return null;
+        }
+
+        Order order=new Order();
+        order.setId(IdGenretor.getId());
+        order.setUserId(loggedInUser.getId());
+        order.setRestaurantId(restaurant.getId());
+        order.setCost(restaurant.getPrice()*Long.valueOf(Qunatity));
+        order.setItem(restaurant.getItem());
+        order.setQuantity(Qunatity);
+        loggedInUser.getOrders().add(order);
+        restaurant.setQuantity(restaurant.getQuantity()-Qunatity);
+        System.out.println("Order placed Successfully with order id "+order.getId());
+        return order;
+
+    }
+
+    public List<Order> orderList(){
+        for(Order order: loggedInUser.getOrders()){
+            System.out.println("Orders with order id "+ order.getId()+" With Qunatity "
+                    +order.getQuantity()+" with Item "+order.getItem()+" from restaurent id "
+                    +order.getRestaurantId());
+        }
+        return loggedInUser.getOrders();
+    }
+
+}
 
 
 
@@ -174,6 +215,9 @@ class soryByPrice implements  Comparator<Restaurant>{
 
     @Override
     public int compare(Restaurant a,Restaurant b){
-        return a.getPrice()-b.getPrice();
+        int val=a.getPrice()-b.getPrice();
+        if(val==0) return 0;
+        else if(val>0) return 1;
+        else return -1;
     }
 }
